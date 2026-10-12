@@ -1,78 +1,159 @@
-# HVTestWebCam — Control Hub Ball CV (Beta Tester Setup)
+# HVTestWebCam — Control Hub OpenCV Ball Chase (Beta Test)
 
-**Goal:** Get ball detection + chase working on the Control Hub in ~3 minutes with zero code edits.
+Part of [Hive Vision](https://github.com/hivevisionftc/Hive-Vision) (model, training and calibration tooling).
 
-This is the OpenCV (HSV blob) version from Hive-Vision `cv/` track, packaged to drop straight into the FTC SDK's `TeamCode`. No Limelight, no coprocessor, no model. It runs entirely on the Control Hub.
+Quick, drop-in OpenCV ball detection for the Control Hub. Runs entirely on the robot with a USB webcam (VisionPortal + OpenCV) — **no Limelight, no coprocessor, and no external model required**. This pack is built to work with the official FTC SDK and is designed to be as easy as possible for beta testers.
 
-## What you get
+## What does Gradle do?
 
-| File | What it does |
-|---|---|
-| `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/BallBlobPipeline.java` | Shared VisionProcessor base (best candidate selection, shape/size gating). |
-| `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/BallDetectorPipeline.java` | HSV thresholding per color (yellow/red/blue), scaled for 1280×720. |
-| `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/BallGetSdkOpMode.java` | **Recommended.** Search → Approach → Grab → Done. Uses multi-frame confirmation so it won't chase false blobs. Drives mecanum wheels + optional intake. |
-| `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/RawBallGet.java` | 1-file fallback. Minimal state machine (SEARCH/CHASE/DONE). Easier to read, less filtering. |
+Gradle is Android Studio's build tool. For FTC projects it:
 
-## Step 1: Download / open FtcRobotController
+- **Downloads dependencies** (FTC SDK, Pedro Pathing, etc.) so you don't have to copy `.jar` files by hand.
+- **Compiles your code** (`TeamCode`) together with the FTC SDK.
+- **Builds and deploys** the app to the Control Hub/Robot Controller when you hit "Run" in Android Studio.
 
-1. Download or clone [FtcRobotController](https://github.com/FIRST-Tech-Challenge/FtcRobotController.git) (Android Studio project).
-2. Open it in **Android Studio** (Ladybug/Koala or recent). Let it sync Gradle fully.
+You don't need to touch Gradle for this pack — just drop the Java files into `TeamCode`.
 
-## Step 2: Drop in these files
+## Installation
 
-1. In Android Studio, open the `TeamCode` module in the Project view (`TeamCode > src > main > java > org.firstinspires.ftc.teamcode`).
-2. **Delete** any example OpModes you don't want (optional). Do **not** delete `RobotAutoDriveToAprilTagOmni.java`/others unless you know why.
-3. Drag/copy these 4 Java files from this repo's `TeamCode/...` folder **directly** into that `teamcode` package in Android Studio.
-4. Android Studio will auto-add them. Sync if prompted.
+Pick one of the two ways to install this for testing.
 
-**That's it for code.** No Gradle changes needed.
+| Method | Difficulty | When to use |
+|---|---|---|
+| **Drop-in (easiest)** | 30 seconds | Beta testing this repo as-is. No Gradle edits required. |
+| **Install from source (local)** | 1–2 minutes | If you want to track changes or test multiple local packs in the same FtcRobotController checkout. |
 
-## Step 3: Robot Configuration (RC app)
+### Option 1: Drop-in (Recommended, easiest for beta testers)
 
-On your Driver Station + Control Hub:
+1. Clone or download [FtcRobotController](https://github.com/FIRST-Tech-Challenge/FtcRobotController.git).
+2. Open **FtcRobotController** in Android Studio. Let Gradle sync fully.
+3. In Android Studio, navigate to `TeamCode > src > main > java > org.firstinspires.ftc.teamcode`.
+4. Copy **all 4 Java files** from this repo's `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/` into that folder:
 
-1. Open the **FTC Driver Station** app, connect to Control Hub.
-2. Go to **Configure Robot** → Edit your config.
-3. Add/verify these **names match exactly**:
+   - `BallBlobPipeline.java`
+   - `BallDetectorPipeline.java`
+   - `BallGetSdkOpMode.java`
+   - `RawBallGet.java`
+
+5. Build and deploy to the Control Hub. You're done.
+
+### Option 2: Beta testing from source (local Maven)
+
+If you want to test this as a local library instead of copying files:
+
+1. Clone this repo:
+
+   ```bash
+   git clone https://github.com/sidhuharjas/HVTestWebCam.git
+   cd HVTestWebCam
+   ```
+
+2. Publish to your local Maven repo (`~/.m2/repository`):
+
+   ```bash
+   ./gradlew publishToMavenLocal
+   ```
+
+   > Needs JDK 17+ and Android SDK set (`ANDROID_HOME` or `local.properties` with `sdk.dir`).
+
+3. Open your **FtcRobotController** project. In `build.dependencies.gradle`, add `mavenLocal()` **before** `mavenCentral()`:
+
+   ```gradle
+   repositories {
+       mavenLocal()
+       mavenCentral()
+       google()
+   }
+   ```
+
+4. In `TeamCode/build.gradle`, add the dependency (example):
+
+   ```gradle
+   dependencies {
+       implementation project(':FtcRobotController')   // already there
+       implementation 'org.hivevisionftc:hvtestwebcam:0.1.0-SNAPSHOT'
+   }
+   ```
+
+   > If the version differs, check `gradle.properties` in this repo.
+
+5. Copy the example OpModes from `docs/examples/` (if present) into `TeamCode`, or just use the ones published. Sync Gradle and deploy.
+
+> **Note:** Most beta testers should use **Option 1 (Drop-in)**. It's the easiest and requires zero Gradle edits.
+
+## Hardware Configuration (Control Hub)
+
+In the **FTC Driver Station > Configure Robot** menu, create/verify these device names **exactly** as listed:
 
 | Device Type | Name | Notes |
 |---|---|---|
-| Camera | `Webcam 1` | USB webcam plugged into Control Hub. Use 1280×720 if possible. |
-| DcMotor | `fl`, `fr`, `bl`, `br` | Drive wheels (mecanum). |
-| DcMotor | `intake` | **Optional.** If missing, the OpModes will still drive to the ball (no intake spin). |
+| Camera | `Webcam 1` | USB webcam plugged into the Control Hub. Run at **1280×720** for best results. |
+| DcMotor | `fl`, `fr`, `bl`, `br` | Mecanum drive wheels. |
+| DcMotor | `intake` | **Optional.** If not present, the OpModes will still drive to the ball (intake won't spin). |
 
-**Motor directions:** `+` power must make the robot go **forward** on all 4 wheels. If any side runs backwards, flip directions in `BallGetSdkOpMode` (`LEFT_DIR` / `RIGHT_DIR`).
+**Motor directions:** `+` power must make the robot move **forward** on all four wheels. If any side runs backwards, flip `LEFT_DIR` / `RIGHT_DIR` in `BallGetSdkOpMode`.
 
-## Step 4: Which OpMode to run
+## Which OpMode to Run
 
-On the Driver Station → **TeleOp** dropdown:
+In TeleOp, select one of these:
 
-- **`Ball Get (OpenCV, no Pedro)`** — **Recommended for beta testing.** Has multi-frame confirmation (`CONFIRM_FRAMES`) so it rejects flickering blobs. Much less jittery.
-- **`Raw Ball Get (1 file)`** — Barebones, chases the first blob it sees. Good for sanity-checking HSV/tuning only.
+| OpMode Name | Use For | Notes |
+|---|---|---|
+| **`Ball Get (OpenCV, no Pedro)`** | **Recommended (beta testing)** | Multi-frame confirmation (`CONFIRM_FRAMES`) prevents chasing flickering blobs. Smoothest and least jittery. |
+| **`Raw Ball Get (1 file)`** | Sanity check / tuning | Barebones (SEARCH/CHASE/DONE). Chases the first valid blob it sees. Great for quick HSV verification. |
 
-Select the recommended one first.
+Run **`Ball Get (OpenCV, no Pedro)`** first.
 
-## Step 5: Tuning (only if it chases the wrong thing)
+## How It Works
 
-The defaults are tuned for FTC game balls under typical field lighting (scaled for 1280×720). If it's grabbing tape/panels:
+Both OpModes follow the same core flow:
 
-1. **Tweak color first.** The easiest way: run `hsv_tuner.py` from [Hive-Vision/cv/tools](https://github.com/hivevisionftc/Hive-Vision/tree/main/cv/tools) on a recorded frame from your webcam. Copy `H/S/V` min/max back into `BallDetectorPipeline.java` (YELLOW/RED/BLUE blocks).
-2. **Distance scaling.** Park robot exactly **24"** from a ball. Look at telemetry `ball dist=... in`. If it's off, adjust `DIST_REF_AREA` in `BallGetSdkOpMode` (larger area → thinks it's closer). Formula: `newArea ≈ oldArea * (shownDist/realDist)^2`.
-3. **Confirmation.** **Do not** drop `CONFIRM_FRAMES` below 3–4 to "feel faster". Fix lighting/color instead — that's the intended behavior (candidate detector).
+```text
+SEARCH    Spin in place until a stable blob is detected
+APPROACH  Steer on cxNorm, drive on distance (blob area → inches)
+GRAB      Stop, run intake, creep forward until ball disappears from frame (or timeout)
+DONE      All motors off
+```
 
-## Tips that save time
+**Distance estimation:** `dist = DIST_REF_IN * sqrt(DIST_REF_AREA / area)`. Twice as far = ¼ the pixels. Calibrate once with a tape measure at 24".
 
-- **LiveView:** VisionPortal has LiveView enabled — you can see thresholded blobs on the Driver Station/RC camera stream while tuning.
-- **Red wrap-around:** Red is handled as two HSV ranges (standard OpenCV hue wrap). Defaults cover most lighting.
-- **Grab distance:** `GRAB_DIST_IN=16"` keeps the ball far enough that area gates don't reject very close blobs at 720p.
-- **Lost timeout:** If the ball leaves frame, it backs to `SEARCH` after `LOST_MS=400ms` and spins.
+**Confirmation (why it waits):** OpenCV HSV blob detection is a *candidate* detector (not ground truth). Requiring the same blob for **4 consecutive frames** (`CONFIRM_FRAMES=4`) prevents false positives from tape/panels. **Do not** lower this to feel snappier — fix lighting/HSV ranges instead.
 
-## Expected behavior
+## Tuning (If It Chases the Wrong Thing)
 
-1. TeleOp starts in `SEARCH` → robot slowly spins in place.
-2. Aim webcam at a ball → after ~4 consistent frames it locks on (`APPROACH`).
-3. Steers to center, drives forward until ~16" away → enters `GRAB`, runs intake, creeps forward until ball disappears → `DONE` (stops).
+Defaults are tuned for FTC game balls under typical field lighting at 1280×720. If it's picking up tape/robot panels:
 
-If it never locks on: lighting is the #1 culprit. Tune HSV ranges before changing gains.
+1. **Tune HSV first (biggest win).** Use [`cv/tools/hsv_tuner.py`](https://github.com/hivevisionftc/Hive-Vision/tree/main/cv/tools) from Hive-Vision on a frame from your webcam. Copy the H/S/V min/max back into `BallDetectorPipeline.java` (YELLOW/RED/BLUE blocks).
+2. **Calibrate distance.** Park the robot exactly **24"** from a ball. Look at telemetry: `ball dist=... in`. If off, adjust `DIST_REF_AREA` in `BallGetSdkOpMode` proportionally: `newArea ≈ oldArea * (shownDist/realDist)^2`.
+3. **Keep confirmation high.** Leave `CONFIRM_FRAMES` at 3–4. Lighting fixes almost always beat lowering filters.
 
-**Questions/bugs?** File an issue on [HVTestWebCam](https://github.com/sidhuharjas/HVTestWebCam). This pack tracks the `cv/` Control Hub track from Hive-Vision.
+## Tips
+
+- **LiveView:** VisionPortal has LiveView enabled — you can see thresholded blobs on the Driver Station while tuning.
+- **Red hue wrap:** Red is automatically handled with two HSV ranges (OpenCV hue wraps at 0/180).
+- **Grab distance:** `GRAB_DIST_IN=16"` avoids rejecting blobs that get very large up close at 720p.
+- **Lost timeout:** If the ball leaves the frame, it returns to `SEARCH` after `LOST_MS=400ms`.
+
+## Expected Behavior
+
+1. TeleOp starts → `SEARCH` (slow spin).
+2. Aim at a ball → after ~4 consistent frames it locks (`APPROACH`).
+3. Centers + drives forward to ~16" → `GRAB`, runs intake, creeps until ball disappears → `DONE` (stops).
+
+If it never locks on, **lighting/color ranges** are almost always the culprit.
+
+## Building & Testing (Developers)
+
+From this repo root:
+
+```bash
+./gradlew test               # Desktop unit tests (no robot/camera)
+./gradlew assembleRelease    # Build AAR + sources/javadoc
+./gradlew spotlessCheck      # Formatting check (spotlessApply to fix)
+```
+
+Requires JDK 17+ and Android SDK (`ANDROID_HOME` or `local.properties` with `sdk.dir`).
+
+## License
+
+MIT — see [LICENSE](LICENSE) if present.
