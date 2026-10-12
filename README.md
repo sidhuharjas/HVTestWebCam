@@ -83,7 +83,7 @@ If you want to test this as a local library instead of copying files:
 
 ## Hardware Configuration (Control Hub)
 
-In the **FTC Driver Station > Configure Robot** menu, create/verify these device names **exactly** as listed:
+**Option A — rename your config.** In the **FTC Driver Station > Configure Robot** menu, use these exact names:
 
 | Device Type | Name | Notes |
 |---|---|---|
@@ -91,7 +91,14 @@ In the **FTC Driver Station > Configure Robot** menu, create/verify these device
 | DcMotor | `fl`, `fr`, `bl`, `br` | Mecanum drive wheels. |
 | DcMotor | `intake` | **Optional.** If not present, the OpModes will still drive to the ball (intake won't spin). |
 
-**Motor directions:** `+` power must make the robot move **forward** on all four wheels. If any side runs backwards, flip `LEFT_DIR` / `RIGHT_DIR` in `BallGetSdkOpMode`.
+**Option B — keep your names, edit the OpModes.** Change the top constants to match your existing config, then re-deploy:
+
+- `BallGetSdkOpMode.java`: `CAM_NAME`, `FL`, `FR`, `BL`, `BR`, `INTAKE`
+- `RawBallGet.java`: `CAM`, `INTAKE`
+
+Either option works — pick one.
+
+**Motor directions:** `+` power must make the robot move **forward** on all four wheels. If any side runs backwards, flip `LEFT_DIR` / `RIGHT_DIR` in `BallGetSdkOpMode` (Option B) or fix the motor direction in your config (Option A).
 
 ## Which OpMode to Run
 
